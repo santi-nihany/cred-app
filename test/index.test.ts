@@ -133,9 +133,10 @@ describe('Setup', () => {
       })
 
       // ON-CHAIN VERIFICATION FAILS, CHECK https://github.com/noir-lang/noir/issues/3245
-      it.skip("Verifies a valid claim on-chain", async () => {
+      it("Verifies a valid claim on-chain", async () => {
         const { nullifier } = await getClaimInputs({ user: user1 });
         const ad = await airdrop.contract();
+
 
         await ad.write.claim([toHex(proof.proof), nullifier as `0x${string}`], { account: claimer1.account!.address });
 

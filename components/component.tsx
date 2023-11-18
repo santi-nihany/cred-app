@@ -3,17 +3,22 @@ import { useState, useEffect, useMemo, useContext } from 'react';
 import { toast } from 'react-toastify';
 import React from 'react';
 
-import { fromHex, hashMessage, recoverPublicKey } from 'viem';
+import { fromHex, hashMessage, recoverPublicKey, toHex } from 'viem';
 
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
 import { Noir }  from '@noir-lang/noir_js';
 import { CompiledCircuit, ProofData } from "@noir-lang/types"
-import { useAccount, useConnect, useWalletClient } from 'wagmi'
+import { createConfig, useContractWrite, usePrepareContractWrite, useWalletClient } from 'wagmi'
 import { InjectedConnector } from 'wagmi/connectors/injected'
 import { MerkleTreeContext } from "../components/merkleTree";
 
 import circuit from "../circuits/target/stealthdrop.json"
 import { Fr } from '@aztec/bb.js';
+import { readFileSync } from 'fs';
+import addresses from "../utils/addresses.json"
+import credNftJson from "../artifacts/contracts/CredentialNft.sol/CredentialNft.json";
+import { useAccount, useConnect, useEnsName } from 'wagmi'
+
 
 function useProver({ inputs }) {
   const [proof, setProof] = useState<ProofData>();
@@ -22,6 +27,7 @@ function useProver({ inputs }) {
     return(new Noir(circuit as unknown as CompiledCircuit, backend))
   }, [circuit])
 
+  /*
   useEffect(() => {
     if (!proof) return;
 
@@ -36,6 +42,7 @@ function useProver({ inputs }) {
 
     verify();
   }, [proof])
+  */
 
   useEffect(() => {
     if (!inputs) return;
@@ -55,7 +62,7 @@ function useProver({ inputs }) {
     prove();
   }, [inputs])
 
-  return;
+  return proof;
 }
 
 function Component() {
@@ -66,12 +73,24 @@ function Component() {
   const [inputs, setInputs] = useState<any>();
 
   const { data: walletClient, status: walletConnStatus } = useWalletClient()
-  const { isConnected } = useAccount()
-  const { connect, connectors } = useConnect({
+
+  const credentialNftAbi = credNftJson.abi;
+  const proof = useProver({ inputs });
+
+
+  const { config } = usePrepareContractWrite({
+    address: addresses.credentialNft,
+    abi: credentialNftAbi,
+    functionName: 'claim',
+  })
+
+  const { data: writeData, isLoading: writeLoading, write } = useContractWrite(config);
+
+  const { address, isConnected } = useAccount()
+  const { connect } = useConnect({
     connector: new InjectedConnector(),
   })
 
-  useProver({ inputs });
 
   let messageToHash = '0xabfd76608112cc843dca3a31931f3974da5f9f5d32833e7817bc7e5c50c7821e';
 
@@ -103,8 +122,8 @@ function Component() {
         claimer_pub: acc,
     };
 
-    console.log(inputs)
-    setInputs(inputs)
+    setInputs(inputs);
+
   };
 
   const initAddresses = async () => {
@@ -118,7 +137,6 @@ function Component() {
     }
   }, [walletConnStatus])
 
-
   return (
     <div className="gameContainer">
       <h1>Stealthdrop</h1>
@@ -129,6 +147,13 @@ function Component() {
         <li>Generate proof</li>
         <li>Send the transaction</li>
       </ol>
+      {writeLoading && <p>Please confirm the transaction on your wallet</p>}
+      {writeData && <p>The transaction was sent! Here is the hash: {writeData.hash}</p>}
+      {!writeLoading && (
+        <button disabled={!write} onClick={() => write({args: [proof, inputs.nullifier, ""]})}>
+          Write function
+        </button>
+      )}
       {availableAddresses.map(acc => <button onClick={() => signData(acc)}>Sign with connected account: {acc}</button>)}
       {storedSignature && <p>Saved signature: {storedSignature!.signature} for account {storedSignature!.account}</p>}
 

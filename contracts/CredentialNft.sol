@@ -38,17 +38,18 @@ contract CredentialNft is ERC721URIStorage {
         return _publicInputs;
     }
 
-    function claim(bytes calldata proof, bytes32[] memory publicInputs, string memory tokenURI) external {
-        
-        bytes32 _nullifier = publicInputs[0];
+    function claim() external {
+        bytes32[] memory _publicInputs = new bytes32[](2);
+       // _publicInputs[0] = nullifier;
+        _publicInputs[1] = bytes32(uint256(uint160(msg.sender)));
 
         //verifier.verify(proof, _publicInputs); (not working)
 
         // mint tokens
         _safeMint(msg.sender, s_tokenCounter);
-        _setTokenURI(s_tokenCounter, tokenURI);
+       // _setTokenURI(s_tokenCounter, tokenURI);
         emit NftMinted(s_tokenCounter);
-        nullifiers[_nullifier] = true;
+       // nullifiers[nullifier] = true;
         s_tokenCounter = s_tokenCounter + 1;
     }
 

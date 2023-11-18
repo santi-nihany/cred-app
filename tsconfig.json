@@ -5,7 +5,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "noEmitOnError": true,
     "skipDefaultLibCheck": true,
@@ -30,7 +30,8 @@
   ],
   "include": [
     "**/*.ts",
-    "**/*.json"
+    "**/*.json",
+    "**/*.tsx",
   ],
   "files": [
     "./hardhat.config.ts"
